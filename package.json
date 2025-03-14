@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "cron": "node src/scripts/cron.js"
+    "lint": "next lint"
   },
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.9",
