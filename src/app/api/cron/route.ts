@@ -13,9 +13,11 @@ export async function GET() {
     
     // If no app state exists, create one
     if (!appState) {
+      const nextPeriodChange = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
       appState = await AppState.create({
         currentPeriod: PeriodStatus.VOTING,
         lastUpdated: new Date(),
+        nextPeriodChange,
       });
     }
     
@@ -34,9 +36,13 @@ export async function GET() {
         await topVotedTopic.save();
         
         // Update the app state
+        const now = new Date();
+        const nextPeriodChange = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
+        
         appState.currentPeriod = PeriodStatus.DEBATE;
         appState.topicId = topVotedTopic._id.toString();
-        appState.lastUpdated = new Date();
+        appState.lastUpdated = now;
+        appState.nextPeriodChange = nextPeriodChange;
         await appState.save();
         
         return NextResponse.json({
@@ -55,14 +61,24 @@ export async function GET() {
       }
     } else {
       // If we're in debate period, switch back to voting period
+      const now = new Date();
+      const nextPeriodChange = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
+      
       appState.currentPeriod = PeriodStatus.VOTING;
       appState.topicId = undefined;
-      appState.lastUpdated = new Date();
+      appState.lastUpdated = now;
+      appState.nextPeriodChange = nextPeriodChange;
       await appState.save();
+      
+      // Clear votes for all topics that haven't been debated yet
+      await Topic.updateMany(
+        { isDebated: false },
+        { $set: { votes: 0, votedBy: [] } }
+      );
       
       return NextResponse.json({
         success: true,
-        message: 'Switched to voting period',
+        message: 'Switched to voting period and cleared votes',
         period: PeriodStatus.VOTING,
       });
     }

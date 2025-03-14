@@ -22,6 +22,7 @@ export interface ITopic extends Document {
 export interface IAppState extends Document {
   currentPeriod: PeriodStatus;
   lastUpdated: Date;
+  nextPeriodChange: Date; // When the next period change will occur
   topicId?: string; // ID of the current topic being debated
 }
 
@@ -73,6 +74,10 @@ const AppStateSchema: Schema = new Schema(
       type: Date,
       default: Date.now,
     },
+    nextPeriodChange: {
+      type: Date,
+      default: () => new Date(Date.now() + 5 * 60 * 1000), // 5 minutes from now
+    },
     topicId: {
       type: String,
       required: false,
@@ -85,7 +90,23 @@ const AppStateSchema: Schema = new Schema(
 
 // Create and export the models
 // Check if models are already defined to prevent recompilation errors
-export const Topic = mongoose.models.Topic || mongoose.model<ITopic>('Topic', TopicSchema);
-export const AppState = mongoose.models.AppState || mongoose.model<IAppState>('AppState', AppStateSchema);
+let TopicModel: mongoose.Model<ITopic>;
+let AppStateModel: mongoose.Model<IAppState>;
+
+// Use try-catch to handle potential errors with mongoose.models
+try {
+  TopicModel = mongoose.models.Topic as mongoose.Model<ITopic> || mongoose.model<ITopic>('Topic', TopicSchema);
+} catch (error) {
+  TopicModel = mongoose.model<ITopic>('Topic', TopicSchema);
+}
+
+try {
+  AppStateModel = mongoose.models.AppState as mongoose.Model<IAppState> || mongoose.model<IAppState>('AppState', AppStateSchema);
+} catch (error) {
+  AppStateModel = mongoose.model<IAppState>('AppState', AppStateSchema);
+}
+
+export const Topic = TopicModel;
+export const AppState = AppStateModel;
 
 export default Topic;

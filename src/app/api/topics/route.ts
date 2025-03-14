@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
     const appState = await AppState.findOne({});
     const currentPeriod = appState ? appState.currentPeriod : PeriodStatus.VOTING;
     const currentTopicId = appState ? appState.topicId : null;
+    const nextPeriodChange = appState ? appState.nextPeriodChange : new Date(Date.now() + 5 * 60 * 1000);
     
     // Fetch top 15 topics sorted by votes in descending order
     const topics = await Topic.find({})
@@ -60,7 +61,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       topics: topicsWithVoteStatus,
       currentPeriod,
-      currentTopicId
+      currentTopicId,
+      nextPeriodChange
     }, { status: 200 });
   } catch (error) {
     console.error('Error fetching topics:', error);

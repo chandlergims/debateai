@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { PeriodStatus } from '@/models/Topic';
+import PeriodTimer from '@/components/PeriodTimer';
 
 interface Topic {
   _id: string;
@@ -32,6 +33,7 @@ export default function VotingPage() {
   const [maxTopicsReached, setMaxTopicsReached] = useState(false);
   const [currentPeriod, setCurrentPeriod] = useState<PeriodStatus>(PeriodStatus.VOTING);
   const [currentTopicId, setCurrentTopicId] = useState<string | null>(null);
+  const [nextPeriodChange, setNextPeriodChange] = useState<string>(new Date(Date.now() + 5 * 60 * 1000).toISOString());
   
   // Get authentication state from context
   const { isAuthenticated, authToken, walletAddress } = useAuth();
@@ -90,6 +92,10 @@ export default function VotingPage() {
       
       if (data.currentTopicId) {
         setCurrentTopicId(data.currentTopicId);
+      }
+      
+      if (data.nextPeriodChange) {
+        setNextPeriodChange(data.nextPeriodChange);
       }
       
       // Set top voted topic
@@ -299,7 +305,14 @@ export default function VotingPage() {
           </button>
         </div>
         
-        {/* Current Period Status */}
+        {/* Period Timer */}
+        <PeriodTimer 
+          nextPeriodChange={nextPeriodChange}
+          currentPeriod={currentPeriod}
+          winningTopic={topVotedTopic ? { title: topVotedTopic.title, votes: topVotedTopic.votes } : undefined}
+        />
+        
+        {/* Current Debate Topic (if in debate period) */}
         {currentPeriod === PeriodStatus.DEBATE && currentTopicId && (
           <div className="mb-6 bg-green-900/20 border border-green-800 rounded-lg p-4">
             <h3 className="text-sm font-medium text-green-500 mb-2">Current Debate Topic</h3>
