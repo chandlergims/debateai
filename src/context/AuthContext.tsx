@@ -56,123 +56,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Get wallet address
       const walletAddress = publicKey.toString();
       
-      // First check if the test API is working
-      try {
-        const testResponse = await fetch('/api/test');
-        if (!testResponse.ok) {
-          console.warn('API routes are not available. Using mock authentication.');
-          
-          // Use mock authentication
-          const mockToken = 'mock_token_' + Math.random().toString(36).substring(2, 15);
-          
-          // Store authentication data
-          localStorage.setItem('authToken', mockToken);
-          localStorage.setItem('walletAddress', walletAddress);
-          
-          setAuthToken(mockToken);
-          setWalletAddress(walletAddress);
-          setIsAuthenticated(true);
-          
-          return;
-        }
-      } catch (error) {
-        console.warn('API test failed. Using mock authentication.', error);
-        
-        // Use mock authentication
-        const mockToken = 'mock_token_' + Math.random().toString(36).substring(2, 15);
-        
-        // Store authentication data
-        localStorage.setItem('authToken', mockToken);
-        localStorage.setItem('walletAddress', walletAddress);
-        
-        setAuthToken(mockToken);
-        setWalletAddress(walletAddress);
-        setIsAuthenticated(true);
-        
-        return;
-      }
+      // Use mock authentication directly since we're not using the API routes
+      console.info('Using mock authentication for wallet connection');
       
-      // Get nonce from server
-      const nonceResponse = await fetch(`/api/auth/nonce?walletAddress=${walletAddress}`);
-      if (!nonceResponse.ok) {
-        // If we get a 404, the API route might not be registered yet
-        if (nonceResponse.status === 404) {
-          console.warn('Nonce API not available. Using mock authentication.');
-          
-          // Use mock authentication
-          const mockToken = 'mock_token_' + Math.random().toString(36).substring(2, 15);
-          
-          // Store authentication data
-          localStorage.setItem('authToken', mockToken);
-          localStorage.setItem('walletAddress', walletAddress);
-          
-          setAuthToken(mockToken);
-          setWalletAddress(walletAddress);
-          setIsAuthenticated(true);
-          
-          return;
-        }
-        
-        throw new Error('Failed to get authentication nonce');
-      }
-      
-      const { nonce } = await nonceResponse.json();
-      
-      // Create message to sign
-      const message = `Sign this message to authenticate with DebateAI: ${nonce}`;
-      
-      // Sign the message with Phantom
-      const encodedMessage = new TextEncoder().encode(message);
-      const signatureData = await phantom.signMessage(encodedMessage);
-      
-      // Convert the signature to a hex string
-      const signature = Array.from(new Uint8Array(signatureData.signature))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      
-      // Authenticate with the server
-      const authResponse = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          walletAddress,
-          signature,
-        }),
-      });
-      
-      if (!authResponse.ok) {
-        // If we get a 404, the API route might not be registered yet
-        if (authResponse.status === 404) {
-          console.warn('Login API not available. Using mock authentication.');
-          
-          // Use mock authentication
-          const mockToken = 'mock_token_' + Math.random().toString(36).substring(2, 15);
-          
-          // Store authentication data
-          localStorage.setItem('authToken', mockToken);
-          localStorage.setItem('walletAddress', walletAddress);
-          
-          setAuthToken(mockToken);
-          setWalletAddress(walletAddress);
-          setIsAuthenticated(true);
-          
-          return;
-        }
-        
-        throw new Error('Authentication failed');
-      }
-      
-      const { token } = await authResponse.json();
+      // Generate a mock token
+      const mockToken = 'mock_token_' + Math.random().toString(36).substring(2, 15);
       
       // Store authentication data
-      localStorage.setItem('authToken', token);
+      localStorage.setItem('authToken', mockToken);
       localStorage.setItem('walletAddress', walletAddress);
       
-      setAuthToken(token);
+      setAuthToken(mockToken);
       setWalletAddress(walletAddress);
       setIsAuthenticated(true);
+      
+      return;
+      
+      // Note: We've removed the API authentication flow since we're not using the API routes
       
     } catch (err: any) {
       console.error('Authentication error:', err);
