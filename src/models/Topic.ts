@@ -61,9 +61,6 @@ const TopicSchema: Schema = new Schema(
   }
 );
 
-// Create and export the Topic model
-export const Topic = mongoose.models.Topic || mongoose.model<ITopic>('Topic', TopicSchema);
-
 // Define the schema for the app state
 const AppStateSchema: Schema = new Schema(
   {
@@ -86,7 +83,9 @@ const AppStateSchema: Schema = new Schema(
   }
 );
 
-// Create and export the AppState model
+// Create and export the models
+// Check if models are already defined to prevent recompilation errors
+export const Topic = mongoose.models.Topic || mongoose.model<ITopic>('Topic', TopicSchema);
 export const AppState = mongoose.models.AppState || mongoose.model<IAppState>('AppState', AppStateSchema);
 
 export default Topic;
