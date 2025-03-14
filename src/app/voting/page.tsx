@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import VotingTimer from '@/components/VotingTimer';
 
 interface Topic {
   _id: string;
@@ -41,6 +42,10 @@ export default function VotingPage() {
       // Add auth token if available
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
+        // Add wallet address to headers for development purposes
+        if (walletAddress) {
+          headers['X-Wallet-Address'] = walletAddress;
+        }
       }
       
       const response = await fetch('/api/topics', {
@@ -142,12 +147,19 @@ export default function VotingPage() {
     if (!newTopic.trim() || !isAuthenticated) return;
 
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      };
+      
+      // Add wallet address to headers for development purposes
+      if (walletAddress) {
+        headers['X-Wallet-Address'] = walletAddress;
+      }
+      
       const response = await fetch('/api/topics', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
+        headers,
         body: JSON.stringify({ title: newTopic }),
       });
 
@@ -191,12 +203,19 @@ export default function VotingPage() {
     }
     
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      };
+      
+      // Add wallet address to headers for development purposes
+      if (walletAddress) {
+        headers['X-Wallet-Address'] = walletAddress;
+      }
+      
       const response = await fetch('/api/topics/vote', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
+        headers,
         body: JSON.stringify({ topicId: id }),
       });
 
@@ -264,11 +283,8 @@ export default function VotingPage() {
           </button>
         </div>
         
-        <div className="mb-4 p-4 bg-black border border-gray-800 rounded-lg">
-          <p className="text-sm text-yellow-400">
-            <span className="font-bold">Note:</span> All topics are wiped every minute by a cron job.
-          </p>
-        </div>
+        {/* Voting Timer */}
+        <VotingTimer />
         
         <div className="flex flex-wrap gap-2 mb-4">
           <button className="border border-gray-800 bg-gray-900 text-white rounded px-3 py-1 text-xs">

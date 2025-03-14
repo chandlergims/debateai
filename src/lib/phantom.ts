@@ -90,8 +90,22 @@ export async function authenticateWallet(
  */
 export function verifyToken(token: string): { walletAddress: string } {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { walletAddress: string };
-    return decoded;
+    // First try to verify the token normally
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { walletAddress: string };
+      return decoded;
+    } catch (jwtError) {
+      // For development purposes, if the token starts with 'mock_token_', extract the wallet address from localStorage
+      if (token.startsWith('mock_token_') && typeof window !== 'undefined') {
+        const walletAddress = localStorage.getItem('walletAddress');
+        if (walletAddress) {
+          return { walletAddress };
+        }
+      }
+      
+      // If we can't verify the token or extract the wallet address, throw an error
+      throw jwtError;
+    }
   } catch (error) {
     throw new Error('Invalid token');
   }
