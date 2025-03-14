@@ -1,53 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { io, Socket } from 'socket.io-client';
 
-interface VotingSession {
-  startTime: number;
-  endTime: number;
-}
-
+// Hardcoded timer for now - will be replaced with WebSocket later
 export default function VotingTimer() {
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
-  const [sessionInfo, setSessionInfo] = useState<VotingSession | null>(null);
-  
-  // Connect to the WebSocket server
-  useEffect(() => {
-    // Create socket connection
-    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3002');
-    setSocket(newSocket);
-    
-    // Clean up on unmount
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
-  
-  // Listen for voting session updates
-  useEffect(() => {
-    if (!socket) return;
-    
-    // Listen for voting session updates
-    socket.on('votingSessionUpdate', (data: VotingSession) => {
-      setSessionInfo(data);
-    });
-    
-    // Clean up on unmount
-    return () => {
-      socket.off('votingSessionUpdate');
-    };
-  }, [socket]);
+  const [timeRemaining, setTimeRemaining] = useState<number>(60000); // 60 seconds
+  const [startTime] = useState<number>(Date.now());
+  const [endTime] = useState<number>(Date.now() + 60000); // 60 seconds from now
   
   // Update the timer every second
   useEffect(() => {
-    if (!sessionInfo) return;
-    
     const updateTimer = () => {
       const now = Date.now();
-      const remaining = Math.max(0, sessionInfo.endTime - now);
+      const remaining = Math.max(0, endTime - now);
       setTimeRemaining(remaining);
+      
+      // If timer reaches 0, reset it to 60 seconds
+      if (remaining === 0) {
+        setTimeRemaining(60000);
+      }
     };
     
     // Update immediately
@@ -58,7 +29,7 @@ export default function VotingTimer() {
     
     // Clean up on unmount
     return () => clearInterval(intervalId);
-  }, [sessionInfo]);
+  }, [endTime]);
   
   // Format time remaining as MM:SS
   const formatTimeRemaining = () => {
@@ -70,10 +41,8 @@ export default function VotingTimer() {
   
   // Calculate progress percentage (0-100)
   const calculateProgress = () => {
-    if (!sessionInfo) return 0;
-    
-    const totalDuration = sessionInfo.endTime - sessionInfo.startTime;
-    const elapsed = Date.now() - sessionInfo.startTime;
+    const totalDuration = 60000; // 60 seconds
+    const elapsed = Date.now() - startTime;
     return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
   };
   

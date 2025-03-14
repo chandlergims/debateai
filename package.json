@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node src/server.js",
+    "dev": "next dev",
     "build": "next build",
-    "start": "NODE_ENV=production node src/server.js",
-    "lint": "next lint"
+    "start": "next start",
+    "lint": "next lint",
+    "cron": "node src/scripts/cron.js"
   },
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.9",
