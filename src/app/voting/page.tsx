@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { PeriodStatus } from '@/models/Topic';
 
 interface Topic {
   _id: string;
@@ -12,6 +13,7 @@ interface Topic {
   hasVoted?: boolean;
   createdBy: string;
   votedBy?: string[];
+  isCurrentDebateTopic?: boolean;
 }
 
 export default function VotingPage() {
@@ -28,6 +30,8 @@ export default function VotingPage() {
   const [wordCount, setWordCount] = useState(0);
   const [hasCreatedTopic, setHasCreatedTopic] = useState(false);
   const [maxTopicsReached, setMaxTopicsReached] = useState(false);
+  const [currentPeriod, setCurrentPeriod] = useState<PeriodStatus>(PeriodStatus.VOTING);
+  const [currentTopicId, setCurrentTopicId] = useState<string | null>(null);
   
   // Get authentication state from context
   const { isAuthenticated, authToken, walletAddress } = useAuth();
@@ -78,6 +82,15 @@ export default function VotingPage() {
       const data = await response.json();
       setTopics(data.topics);
       setFilteredTopics(data.topics);
+      
+      // Set current period and topic
+      if (data.currentPeriod) {
+        setCurrentPeriod(data.currentPeriod);
+      }
+      
+      if (data.currentTopicId) {
+        setCurrentTopicId(data.currentTopicId);
+      }
       
       // Set top voted topic
       if (data.topics.length > 0) {
@@ -250,12 +263,23 @@ export default function VotingPage() {
       {/* Trending Topics section */}
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-green-500">Trending Topics</h2>
+          <div>
+            <h2 className="text-xl font-bold text-green-500">
+              {currentPeriod === PeriodStatus.VOTING ? 'Trending Topics' : 'Debate Period'}
+            </h2>
+            <p className="text-sm text-gray-400">
+              {currentPeriod === PeriodStatus.VOTING 
+                ? 'Vote for the topic you want to see debated next' 
+                : 'Voting is paused during the debate period'}
+            </p>
+          </div>
           
-          {/* Create Topic Button */}
+          {/* Create Topic Button - Disabled during debate period */}
           <button 
             onClick={() => {
-              if (!isAuthenticated) {
+              if (currentPeriod === PeriodStatus.DEBATE) {
+                setError('Creating topics is not allowed during the debate period');
+              } else if (!isAuthenticated) {
                 setError('Please connect your wallet to create a topic');
               } else if (hasCreatedTopic) {
                 setError('You can only create one topic');
@@ -266,7 +290,7 @@ export default function VotingPage() {
               }
             }}
             className={`text-sm py-2 px-4 rounded-md transition-colors duration-200 ${
-              !isAuthenticated || hasCreatedTopic || maxTopicsReached
+              currentPeriod === PeriodStatus.DEBATE || !isAuthenticated || hasCreatedTopic || maxTopicsReached
                 ? 'bg-gray-900 text-gray-500 border border-gray-700 cursor-not-allowed'
                 : 'bg-black text-green-500 border border-green-600 hover:bg-green-900/20'
             }`}
@@ -275,7 +299,27 @@ export default function VotingPage() {
           </button>
         </div>
         
-        {/* Voting Timer removed for now */}
+        {/* Current Period Status */}
+        {currentPeriod === PeriodStatus.DEBATE && currentTopicId && (
+          <div className="mb-6 bg-green-900/20 border border-green-800 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-green-500 mb-2">Current Debate Topic</h3>
+            {topics.map(topic => (
+              topic.isCurrentDebateTopic && (
+                <div key={topic._id} className="bg-black p-3 rounded border border-green-600">
+                  <p className="text-white font-medium">{topic.title}</p>
+                  <div className="mt-2 flex justify-between items-center">
+                    <span className="bg-gray-900 text-green-500 px-2 py-0.5 rounded text-xs font-medium">
+                      {topic.votes} votes
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      Voting will resume in a few minutes
+                    </span>
+                  </div>
+                </div>
+              )
+            ))}
+          </div>
+        )}
         
         <div className="flex flex-wrap gap-2 mb-4">
           <button className="border border-gray-800 bg-gray-900 text-white rounded px-3 py-1 text-xs">
@@ -353,16 +397,22 @@ export default function VotingPage() {
                     </span>
                     <button
                       onClick={() => handleVote(topic._id)}
-                      disabled={!isAuthenticated || topic.hasVoted}
+                      disabled={currentPeriod === PeriodStatus.DEBATE || !isAuthenticated || topic.hasVoted}
                       className={`text-xs py-1 px-2 rounded transition-colors ${
-                        !isAuthenticated
+                        currentPeriod === PeriodStatus.DEBATE
                           ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                          : topic.hasVoted
-                            ? 'bg-green-900/50 text-green-400 cursor-not-allowed'
-                            : 'bg-green-600 hover:bg-green-700 text-white'
+                          : !isAuthenticated
+                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                            : topic.hasVoted
+                              ? 'bg-green-900/50 text-green-400 cursor-not-allowed'
+                              : 'bg-green-600 hover:bg-green-700 text-white'
                       }`}
                     >
-                      {topic.hasVoted ? 'Voted' : 'Vote'}
+                      {currentPeriod === PeriodStatus.DEBATE 
+                        ? 'Voting Paused' 
+                        : topic.hasVoted 
+                          ? 'Voted' 
+                          : 'Vote'}
                     </button>
                   </div>
                 </div>

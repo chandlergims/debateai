@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import dbConnect from '@/lib/mongodb';
-import Topic from '@/models/Topic';
+import Topic, { AppState, PeriodStatus } from '@/models/Topic';
 import { verifyToken } from '@/lib/phantom';
 
 // Helper function to get the wallet address from the authorization header
@@ -64,6 +64,15 @@ export async function POST(request: NextRequest) {
     if (topic.votedBy.includes(walletAddress)) {
       return NextResponse.json(
         { error: 'You have already voted on this topic' },
+        { status: 403 }
+      );
+    }
+    
+    // Check the current period
+    const appState = await AppState.findOne({});
+    if (appState && appState.currentPeriod === PeriodStatus.DEBATE) {
+      return NextResponse.json(
+        { error: 'Voting is not allowed during the debate period' },
         { status: 403 }
       );
     }

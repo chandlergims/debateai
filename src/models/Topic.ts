@@ -1,5 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+// Define the possible states for the app
+export enum PeriodStatus {
+  VOTING = 'voting',
+  DEBATE = 'debate'
+}
+
 // Define the interface for a Topic document
 export interface ITopic extends Document {
   title: string;
@@ -10,6 +16,13 @@ export interface ITopic extends Document {
   debateDate?: Date;
   createdBy: string; // wallet address
   votedBy: string[]; // array of wallet addresses
+}
+
+// Interface for the app state
+export interface IAppState extends Document {
+  currentPeriod: PeriodStatus;
+  lastUpdated: Date;
+  topicId?: string; // ID of the current topic being debated
 }
 
 // Define the schema for a Topic
@@ -49,4 +62,31 @@ const TopicSchema: Schema = new Schema(
 );
 
 // Create and export the Topic model
-export default mongoose.models.Topic || mongoose.model<ITopic>('Topic', TopicSchema);
+export const Topic = mongoose.models.Topic || mongoose.model<ITopic>('Topic', TopicSchema);
+
+// Define the schema for the app state
+const AppStateSchema: Schema = new Schema(
+  {
+    currentPeriod: {
+      type: String,
+      enum: Object.values(PeriodStatus),
+      default: PeriodStatus.VOTING,
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now,
+    },
+    topicId: {
+      type: String,
+      required: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Create and export the AppState model
+export const AppState = mongoose.models.AppState || mongoose.model<IAppState>('AppState', AppStateSchema);
+
+export default Topic;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import dbConnect from '@/lib/mongodb';
-import Topic, { ITopic } from '@/models/Topic';
+import Topic, { ITopic, AppState, PeriodStatus } from '@/models/Topic';
 import { verifyToken } from '@/lib/phantom';
 
 // Maximum number of topics allowed
@@ -35,6 +35,11 @@ export async function GET(request: NextRequest) {
     // Get wallet address from token (if authenticated)
     const walletAddress = await getWalletAddress(request);
     
+    // Get the current app state
+    const appState = await AppState.findOne({});
+    const currentPeriod = appState ? appState.currentPeriod : PeriodStatus.VOTING;
+    const currentTopicId = appState ? appState.topicId : null;
+    
     // Fetch top 15 topics sorted by votes in descending order
     const topics = await Topic.find({})
       .sort({ votes: -1 })
@@ -43,13 +48,20 @@ export async function GET(request: NextRequest) {
     // Add hasVoted field to each topic if user is authenticated
     const topicsWithVoteStatus = topics.map(topic => {
       const hasVoted = walletAddress ? topic.votedBy.includes(walletAddress) : false;
+      const isCurrentDebateTopic = currentTopicId ? topic._id.toString() === currentTopicId.toString() : false;
+      
       return {
         ...topic.toObject(),
-        hasVoted
+        hasVoted,
+        isCurrentDebateTopic
       };
     });
     
-    return NextResponse.json({ topics: topicsWithVoteStatus }, { status: 200 });
+    return NextResponse.json({ 
+      topics: topicsWithVoteStatus,
+      currentPeriod,
+      currentTopicId
+    }, { status: 200 });
   } catch (error) {
     console.error('Error fetching topics:', error);
     return NextResponse.json(
@@ -91,6 +103,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'A topic with this title already exists' },
         { status: 409 }
+      );
+    }
+    
+    // Check the current period
+    const appState = await AppState.findOne({});
+    if (appState && appState.currentPeriod === PeriodStatus.DEBATE) {
+      return NextResponse.json(
+        { error: 'Creating topics is not allowed during the debate period' },
+        { status: 403 }
       );
     }
     
