@@ -17,14 +17,9 @@ export default function PeriodTimer({ nextPeriodChange, currentPeriod, winningTo
   const [showWinningTopic, setShowWinningTopic] = useState<boolean>(false);
   
   useEffect(() => {
-    // Calculate initial time remaining
-    const endTime = new Date(nextPeriodChange).getTime();
-    const now = new Date().getTime();
-    const initialTimeRemaining = Math.max(0, endTime - now);
-    setTimeRemaining(initialTimeRemaining);
-    
-    // Set up interval to update time remaining
-    const intervalId = setInterval(() => {
+    // Function to update the timer
+    const updateTimer = () => {
+      const endTime = new Date(nextPeriodChange).getTime();
       const now = new Date().getTime();
       const remaining = Math.max(0, endTime - now);
       setTimeRemaining(remaining);
@@ -36,7 +31,13 @@ export default function PeriodTimer({ nextPeriodChange, currentPeriod, winningTo
         // Reset when timer reaches 0
         setShowWinningTopic(false);
       }
-    }, 1000);
+    };
+    
+    // Update immediately
+    updateTimer();
+    
+    // Set up interval to update time remaining
+    const intervalId = setInterval(updateTimer, 1000);
     
     return () => clearInterval(intervalId);
   }, [nextPeriodChange, currentPeriod, winningTopic]);
@@ -51,8 +52,14 @@ export default function PeriodTimer({ nextPeriodChange, currentPeriod, winningTo
   
   // Calculate progress percentage (0-100)
   const calculateProgress = () => {
+    // Calculate total duration based on the nextPeriodChange
+    const endTime = new Date(nextPeriodChange).getTime();
+    const startTime = endTime - (5 * 60 * 1000); // 5 minutes before end time
+    const now = new Date().getTime();
+    
+    // Calculate progress as percentage of elapsed time
+    const elapsed = now - startTime;
     const totalDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
-    const elapsed = totalDuration - timeRemaining;
     return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
   };
   
