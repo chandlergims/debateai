@@ -25,7 +25,7 @@ export async function GET() {
       // Find the topic with the most votes that hasn't been debated yet
       const topVotedTopic = await Topic.findOne({ isDebated: false })
         .sort({ votes: -1 })
-        .limit(1);
+        .limit(1) as any;
       
       if (topVotedTopic) {
         // Mark the topic as debated
@@ -35,7 +35,7 @@ export async function GET() {
         
         // Update the app state
         appState.currentPeriod = PeriodStatus.DEBATE;
-        appState.topicId = topVotedTopic._id;
+        appState.topicId = topVotedTopic._id.toString();
         appState.lastUpdated = new Date();
         await appState.save();
         

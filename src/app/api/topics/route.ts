@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     // Add hasVoted field to each topic if user is authenticated
     const topicsWithVoteStatus = topics.map(topic => {
       const hasVoted = walletAddress ? topic.votedBy.includes(walletAddress) : false;
-      const isCurrentDebateTopic = currentTopicId ? topic._id.toString() === currentTopicId.toString() : false;
+      const isCurrentDebateTopic = currentTopicId ? (topic._id as any).toString() === currentTopicId.toString() : false;
       
       return {
         ...topic.toObject(),
